@@ -17,13 +17,14 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
-  const [name, setName] = useState('');
+  const [nama, setnama] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [alamat, setAlamat] = useState('');
   const { register } = useAuth();
   const navigate = useNavigate();
 
@@ -36,7 +37,7 @@ const Register = () => {
       return;
     }
 
-    const result = await register(name, email, password);
+    const result = await register(nama, email, password, alamat);
     if (result.success) {
       navigate('/login');
     } else {
@@ -85,13 +86,13 @@ const Register = () => {
               margin="normal"
               required
               fullWidth
-              id="name"
+              id="nama"
               label="Nama Lengkap"
-              name="name"
-              autoComplete="name"
+              nama="nama"
+              autoComplete="nama"
               autoFocus
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={nama}
+              onChange={(e) => setnama(e.target.value)}
               sx={{ mb: 2 }}
             />
             <TextField
@@ -100,7 +101,7 @@ const Register = () => {
               fullWidth
               id="email"
               label="Alamat Email"
-              name="email"
+              nama="email"
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -108,9 +109,20 @@ const Register = () => {
             />
             <TextField
               margin="normal"
+              fullWidth
+              id="alamat"
+              label="Alamat"
+              nama="alamat"
+              autoComplete="street-address"
+              value={alamat}
+              onChange={(e) => setAlamat(e.target.value)}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              margin="normal"
               required
               fullWidth
-              name="password"
+              nama="password"
               label="Password"
               type={showPassword ? "text" : "password"}
               id="password"
@@ -136,7 +148,7 @@ const Register = () => {
               margin="normal"
               required
               fullWidth
-              name="confirmPassword"
+              nama="confirmPassword"
               label="konfirmasi Password"
               type={showConfirmPassword ? "text" : "password"}
               id="confirmPassword"

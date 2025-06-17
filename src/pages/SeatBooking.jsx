@@ -37,10 +37,10 @@ const SeatBooking = () => {
   const [seatFilter, setSeatFilter] = useState('all');
   const [seatStats, setSeatStats] = useState({ 
     total: 0, 
-    available: 0, 
-    booked: 0,
-    window: { total: 0, available: 0 },
-    positions: { upper: 0, middle: 0, lower: 0 }
+    tersedia: 0, 
+    dipesan: 0,
+    jendela: { total: 0, tersedia: 0 },
+    posisi: { atas: 0, tengah: 0, bawah: 0 }
   });
 
   useEffect(() => {
@@ -57,12 +57,25 @@ const SeatBooking = () => {
       console.log("Fetching seats...");
       const response = await axios.get('http://localhost:4000/api/seats');
       console.log("Seats data:", response.data);
-      setSeats(response.data);
-      setFilteredSeats(response.data);
+      // Mapping backend fields to frontend fields (pakai bahasa Indonesia)
+      const mappedSeats = response.data.map(seat => ({
+        nomor_kursi: seat.nomor_kursi,
+        posisi: seat.posisi,
+        jendela: seat.jendela,
+        dipesan: seat.dipesan,
+        id_kursi: seat.id_kursi,
+        // Untuk kemudahan UI, tambahkan alias jika perlu
+        isBooked: seat.dipesan,
+        isWindow: seat.jendela,
+        seatNumber: seat.nomor_kursi,
+        position: seat.posisi,
+      }));
+      setSeats(mappedSeats);
+      setFilteredSeats(mappedSeats);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching seats:", err);
-      setError('Failed to fetch seats');
+      setError('Gagal mengambil data kursi');
       setLoading(false);
     }
   };
@@ -70,7 +83,13 @@ const SeatBooking = () => {
   const fetchSeatStats = async () => {
     try {
       const response = await axios.get('http://localhost:4000/api/seats/stats');
-      setSeatStats(response.data);
+      setSeatStats({
+        total: response.data.total || 0,
+        tersedia: response.data.tersedia || 0,
+        dipesan: response.data.dipesan || 0,
+        jendela: response.data.jendela || { total: 0, tersedia: 0 },
+        posisi: response.data.posisi || { atas: 0, tengah: 0, bawah: 0 }
+      });
     } catch (err) {
       console.error("Error fetching seat stats:", err);
     }
@@ -81,28 +100,26 @@ const SeatBooking = () => {
       setFilteredSeats(seats);
       return;
     }
-    
     let filtered;
     switch (filterType) {
       case 'window':
-        filtered = seats.filter(seat => seat.isWindow);
+        filtered = seats.filter(seat => seat.jendela);
         break;
       case 'upper':
-        filtered = seats.filter(seat => seat.position === 'upper');
+        filtered = seats.filter(seat => seat.posisi === 'atas');
         break;
       case 'middle':
-        filtered = seats.filter(seat => seat.position === 'middle');
+        filtered = seats.filter(seat => seat.posisi === 'tengah');
         break;
       case 'lower':
-        filtered = seats.filter(seat => seat.position === 'lower');
+        filtered = seats.filter(seat => seat.posisi === 'bawah');
         break;
       case 'available':
-        filtered = seats.filter(seat => !seat.isBooked);
+        filtered = seats.filter(seat => !seat.dipesan);
         break;
       default:
         filtered = seats;
     }
-    
     setFilteredSeats(filtered);
   };
 
@@ -123,24 +140,19 @@ const SeatBooking = () => {
       fetchSeatStats();
     } catch (err) {
       console.error("Error initializing seats:", err);
-      setError(err.response?.data?.msg || 'Failed to initialize seats');
+      setError(err.response?.data?.msg || 'Gagal menginisialisasi kursi');
     } finally {
       setInitializingSeats(false);
     }
   };
 
   const handleSeatClick = (seat) => {
-    if (seat.isBooked) return;
-    
+    if (seat.dipesan) return;
     setSelectedSeats(prevSelected => {
-      // Check if this seat is already selected
-      const isAlreadySelected = prevSelected.some(s => s.seatNumber === seat.seatNumber);
-      
+      const isAlreadySelected = prevSelected.some(s => s.nomor_kursi === seat.nomor_kursi);
       if (isAlreadySelected) {
-        // Remove from selection
-        return prevSelected.filter(s => s.seatNumber !== seat.seatNumber);
+        return prevSelected.filter(s => s.nomor_kursi !== seat.nomor_kursi);
       } else {
-        // Add to selection
         return [...prevSelected, seat];
       }
     });
@@ -148,42 +160,37 @@ const SeatBooking = () => {
 
   const handleBooking = async () => {
     if (selectedSeats.length === 0) return;
-
     try {
-      const seatNumbers = selectedSeats.map(seat => seat.seatNumber);
-      
+      // Kirim array nomor_kursi ke backend
+      const nomorKursi = selectedSeats.map(seat => seat.nomor_kursi);
       const response = await axios.post('http://localhost:4000/api/bookings', {
-        seatNumbers: seatNumbers,
+        nomorKursi: nomorKursi,
       });
-      
       console.log("Booking response:", response.data);
       setBookingSuccess(true);
       setSelectedSeats([]);
-      fetchSeats(); // Refresh seat data
-      fetchSeatStats(); // Refresh stats
-      
-      // Redirect to my-bookings page after a short delay
+      fetchSeats();
+      fetchSeatStats();
       setTimeout(() => {
         navigate('/my-bookings');
       }, 1500);
-      
     } catch (err) {
       console.error("Error booking seats:", err);
-      setError(err.response?.data?.msg || 'Failed to book seats');
+      setError(err.response?.data?.msg || 'Gagal memesan kursi');
     }
   };
 
   const isSeatSelected = (seat) => {
-    return selectedSeats.some(s => s.seatNumber === seat.seatNumber);
+    return selectedSeats.some(s => s.nomor_kursi === seat.nomor_kursi);
   };
 
-  const getSeatPositionIcon = (position) => {
-    switch (position) {
-      case 'upper':
+  const getSeatPositionIcon = (posisi) => {
+    switch (posisi) {
+      case 'atas':
         return <HeightIcon fontSize="small" />;
-      case 'middle':
+      case 'tengah':
         return <WidthFullIcon fontSize="small" />;
-      case 'lower':
+      case 'bawah':
         return <AirlineSeatReclineNormalIcon fontSize="small" />;
       default:
         return null;
@@ -191,8 +198,8 @@ const SeatBooking = () => {
   };
 
   const getSeatTooltip = (seat) => {
-    const positionText = seat.position.charAt(0).toUpperCase() + seat.position.slice(1);
-    return `${seat.seatNumber} - ${positionText} ${seat.isWindow ? '(Window)' : ''}`;
+    const posisiText = seat.posisi.charAt(0).toUpperCase() + seat.posisi.slice(1);
+    return `${seat.nomor_kursi} - ${posisiText} ${seat.jendela ? '(Jendela)' : ''}`;
   };
 
   if (loading) {
@@ -265,32 +272,32 @@ const SeatBooking = () => {
                     variant="outlined" 
                   />
                   <Chip 
-                    label={`Tersedia: ${seatStats.available}`} 
+                    label={`Tersedia: ${seatStats.tersedia}`} 
                     color="success" 
-                    variant={seatStats.available > 0 ? "filled" : "outlined"} 
+                    variant={seatStats.tersedia > 0 ? "filled" : "outlined"} 
                   />
                   <Chip 
-                    label={`Dipesan: ${seatStats.booked}`} 
+                    label={`Dipesan: ${seatStats.dipesan}`} 
                     color="error" 
-                    variant={seatStats.booked > 0 ? "filled" : "outlined"} 
+                    variant={seatStats.dipesan > 0 ? "filled" : "outlined"} 
                   />
                 </Box>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                   <Chip 
                     icon={<WindowIcon />}
-                    label={`Jendela: ${seatStats.window?.available || 0}`} 
+                    label={`Jendela: ${seatStats.jendela?.tersedia || 0}`} 
                     color="info" 
                     variant="outlined" 
                   />
                   <Chip 
                     icon={<HeightIcon />}
-                    label={`Atas: ${seatStats.positions?.upper || 0}`} 
+                    label={`Atas: ${seatStats.posisi?.atas || 0}`} 
                     color="secondary" 
                     variant="outlined" 
                   />
                   <Chip 
                     icon={<WidthFullIcon />}
-                    label={`Tengah: ${seatStats.positions?.middle || 0}`} 
+                    label={`Tengah: ${seatStats.posisi?.tengah || 0}`} 
                     color="secondary" 
                     variant="outlined" 
                   />

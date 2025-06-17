@@ -33,8 +33,11 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState({
-    availableSeats: 0,
-    windowSeats: 0,
+    tersedia: 0,
+    jendela: { tersedia: 0 },
+    total: 0,
+    dipesan: 0,
+    posisi: { atas: 0, tengah: 0, bawah: 0 },
     totalBookings: 0
   });
   const [loading, setLoading] = useState(true);
@@ -47,18 +50,18 @@ const Dashboard = () => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      // Fetch seat stats
+      // Ambil statistik kursi
       const seatsResponse = await axios.get('http://localhost:4000/api/seats/stats');
-      
-      // Fetch user bookings count
-      const bookingsResponse = await axios.get('http://localhost:4000/api/bookings/myBooking');
-      
+      // Ambil jumlah pesanan user
+      const bookingsResponse = await axios.get('http://localhost:4000/api/bookings/pesananSaya');
       setStats({
-        availableSeats: seatsResponse.data.available || 0,
-        windowSeats: seatsResponse.data.window?.available || 0,
+        tersedia: seatsResponse.data.tersedia || 0,
+        jendela: seatsResponse.data.jendela || { tersedia: 0 },
+        total: seatsResponse.data.total || 0,
+        dipesan: seatsResponse.data.dipesan || 0,
+        posisi: seatsResponse.data.posisi || { atas: 0, tengah: 0, bawah: 0 },
         totalBookings: bookingsResponse.data.length || 0
       });
-      
       setLastRefreshed(new Date());
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -155,7 +158,7 @@ const Dashboard = () => {
                         Kursi Tersedia
                       </Typography>
                       <Typography variant="h3" fontWeight="bold">
-                        {stats.availableSeats}
+                        {stats.tersedia}
                       </Typography>
                     </Box>
                     <Avatar sx={{ bgcolor: 'primary.light' }}>
@@ -165,7 +168,7 @@ const Dashboard = () => {
                   <Box sx={{ mt: 2, mb: 1 }}>
                     <LinearProgress 
                       variant="determinate" 
-                      value={stats.availableSeats > 40 ? 100 : (stats.availableSeats / 40) * 100} 
+                      value={stats.tersedia > 40 ? 100 : (stats.tersedia / 40) * 100} 
                       sx={{ height: 8, borderRadius: 4 }} 
                     />
                   </Box>
@@ -186,7 +189,7 @@ const Dashboard = () => {
                         Kursi dengan Jendela
                       </Typography>
                       <Typography variant="h3" fontWeight="bold">
-                        {stats.windowSeats}
+                        {stats.jendela.tersedia}
                       </Typography>
                     </Box>
                     <Avatar sx={{ bgcolor: 'info.light' }}>
@@ -196,7 +199,7 @@ const Dashboard = () => {
                   <Box sx={{ mt: 2, mb: 1 }}>
                     <LinearProgress 
                       variant="determinate" 
-                      value={stats.windowSeats > 13 ? 100 : (stats.windowSeats / 13) * 100} 
+                      value={stats.jendela.tersedia > 13 ? 100 : (stats.jendela.tersedia / 13) * 100} 
                       color="info"
                       sx={{ height: 8, borderRadius: 4 }} 
                     />

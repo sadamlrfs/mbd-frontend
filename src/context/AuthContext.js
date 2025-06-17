@@ -32,20 +32,20 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ✅ FIXED: register function should NOT store token or update user state
-  const register = async (name, email, password, navigate) => {
+  const register = async (nama, email, password, alamat) => {
     try {
       const response = await axios.post(
         "http://localhost:4000/api/auth/register",
         {
-          name,
+          nama,
           email,
           password,
+          alamat,
         }
       );
 
       alert(response.data.msg || "Registration successful! Please login.");
       return { success: true };
-      navigate("/login"); // Redirect user to login page
     } catch (err) {
       setError(err.response?.data?.msg || "Registration failed");
       return {
